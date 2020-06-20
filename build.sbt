@@ -6,8 +6,8 @@ lazy val root = project("scala-programming-projects", file("."))
   .settings(description := "Scala by Backwards following the book Scala Programming Projects")
   .aggregate(retirementCalculator)
 
-lazy val retirementCalculator =
-  project("retirement-calculator", file("modules/retirement-calculator"))
+lazy val retirementCalculator = project("retirement-calculator", file("modules/retirement-calculator"))
+  .settings(mainClass in assembly := Some("com.backwards.retirement.SimulatePlanApp"))
 
 def project(id: String, base: File): Project =
   Project(id, base)
