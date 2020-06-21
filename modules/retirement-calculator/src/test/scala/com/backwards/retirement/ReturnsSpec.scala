@@ -3,6 +3,7 @@ package com.backwards.retirement
 import org.scalactic.{Equality, TolerantNumerics, TypeCheckedTripleEquals}
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import com.backwards.retirement.RetCalcError.ReturnMonthOutOfBounds
 
 class ReturnsSpec extends AnyWordSpec with Matchers with TypeCheckedTripleEquals {
   implicit val doubleEquality: Equality[Double] =
@@ -30,8 +31,8 @@ class ReturnsSpec extends AnyWordSpec with Matchers with TypeCheckedTripleEquals
 
   "Returns.monthlyRate of fixed rate" should {
     "return a fixed rate for a FixedReturn" in {
-      Returns.monthlyRate(FixedReturns(0.04), 0) must ===(0.04 / 12)
-      Returns.monthlyRate(FixedReturns(0.04), 10) must ===(0.04 / 12)
+      Returns.monthlyRate(FixedReturns(0.04), 0) must ===(Right(0.04 / 12))
+      Returns.monthlyRate(FixedReturns(0.04), 10) must ===(Right(0.04 / 12))
     }
   }
 
@@ -45,19 +46,18 @@ class ReturnsSpec extends AnyWordSpec with Matchers with TypeCheckedTripleEquals
       )
 
     "return the nth rate for VariableReturn" in {
-      Returns.monthlyRate(variableReturns, 0) must ===(0.1)
-      Returns.monthlyRate(variableReturns, 1) must ===(0.2)
+      Returns.monthlyRate(variableReturns, 0) must ===(Right(0.1))
+      Returns.monthlyRate(variableReturns, 1) must ===(Right(0.2))
     }
 
-    "roll over from the first rate if n > length" in {
-      Returns.monthlyRate(variableReturns, 2) must ===(0.1)
-      Returns.monthlyRate(variableReturns, 3) must ===(0.2)
-      Returns.monthlyRate(variableReturns, 4) must ===(0.1)
+    "return error if n > length" in {
+      Returns.monthlyRate(variableReturns, 2) must ===(Left(ReturnMonthOutOfBounds(2, 1)))
+      Returns.monthlyRate(variableReturns, 3) must ===(Left(ReturnMonthOutOfBounds(3, 1)))
     }
 
     "return the n + offset th rate for OffsetReturn" in {
       val returns = OffsetReturns(variableReturns, 1)
-      Returns.monthlyRate(returns, 0) must ===(0.2)
+      Returns.monthlyRate(returns, 0) must ===(Right(0.2))
     }
   }
 

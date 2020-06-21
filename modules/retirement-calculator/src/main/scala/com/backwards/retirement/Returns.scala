@@ -6,12 +6,15 @@ sealed trait Returns
 
 object Returns {
   @tailrec
-  def monthlyRate(returns: Returns, month: Int): Double = returns match {
+  def monthlyRate(returns: Returns, month: Int): RetCalcError Either Double = returns match {
     case FixedReturns(r) =>
-      r / 12
+      Right(r / 12)
 
     case VariableReturns(rs) =>
-      rs(month % rs.length).monthlyRate
+      if (rs.isDefinedAt(month))
+        Right(rs(month).monthlyRate)
+      else
+        Left(RetCalcError.ReturnMonthOutOfBounds(month, rs.size - 1))
 
     case OffsetReturns(rs, offset) =>
       monthlyRate(rs, month + offset)

@@ -1,11 +1,13 @@
 package com.backwards.retirement
 
 import org.scalactic.{Equality, TolerantNumerics, TypeCheckedTripleEquals}
+import org.scalatest.EitherValues
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import com.backwards.retirement.RetCalcError.MoreExpensesThanIncome
 
 // TypeCheckedTripleEquals provides a powerful assertion, should ===, that ensures at compile time that both sides of the equality have the same type.
-class RetirementCalculatorSpec extends AnyWordSpec with Matchers with TypeCheckedTripleEquals {
+class RetirementCalculatorSpec extends AnyWordSpec with Matchers with TypeCheckedTripleEquals with EitherValues {
   implicit val doubleEquality: Equality[Double] =
     TolerantNumerics.tolerantDoubleEquality(0.0001)
 
@@ -18,7 +20,7 @@ class RetirementCalculatorSpec extends AnyWordSpec with Matchers with TypeChecke
 
   "Retirement Calculator futureCapital" should {
     "calculate the amount of savings I will have in n months" in {
-      val actual = RetirementCalculator.futureCapital(
+      val Right(actual) = RetirementCalculator.futureCapital(
         FixedReturns(0.04), nbOfMonths = 25 * 12,
         netIncome = 3000, currentExpenses = 2000,
         initialCapital = 10000
@@ -29,7 +31,7 @@ class RetirementCalculatorSpec extends AnyWordSpec with Matchers with TypeChecke
     }
 
     "calculate how much savings will be left after having taken a pension for n months" in {
-      val actual = RetirementCalculator.futureCapital(
+      val Right(actual) = RetirementCalculator.futureCapital(
         FixedReturns(0.04), nbOfMonths = 40 * 12,
         netIncome = 0, currentExpenses = 2000,
         initialCapital = 541267.1990
@@ -42,7 +44,7 @@ class RetirementCalculatorSpec extends AnyWordSpec with Matchers with TypeChecke
 
   "Retirement Calculator simulatePlan" should {
     "calculate the capital at retirement and the capital after death" in {
-      val (capitalAtRetirement, capitalAfterDeath) =
+      val Right((capitalAtRetirement, capitalAfterDeath)) =
         RetirementCalculator.simulatePlan(
           FixedReturns(0.04), params, nbOfMonthsSavings = 25 * 12
         )
@@ -63,7 +65,7 @@ class RetirementCalculatorSpec extends AnyWordSpec with Matchers with TypeChecke
         }
       )
 
-      val (capitalAtRetirement, capitalAfterDeath) =
+      val Right((capitalAtRetirement, capitalAfterDeath)) =
         RetirementCalculator.simulatePlan(returns, params, nbOfMonthsSavings)
 
       capitalAtRetirement must ===(541267.1990)
@@ -78,7 +80,7 @@ class RetirementCalculatorSpec extends AnyWordSpec with Matchers with TypeChecke
       )
 
       val expected = 23 * 12 + 1
-      actual must ===(expected)
+      actual must ===(Right(expected))
     }
 
     "not crash if the resulting nbOfMonths is very high" in {
@@ -90,13 +92,13 @@ class RetirementCalculatorSpec extends AnyWordSpec with Matchers with TypeChecke
       val actual = RetirementCalculator.nbOfMonthsSaving(params, FixedReturns(0.01))
 
       val expected = 8280
-      actual must ===(expected)
+      actual must ===(Right(expected))
     }
 
     "not loop forever if I enter bad parameters" in {
       val actual = RetirementCalculator.nbOfMonthsSaving(params.copy(netIncome = 1000), FixedReturns(0.04))
 
-      actual must === (Int.MaxValue)
+      actual must ===(Left(MoreExpensesThanIncome(1000, 2000)))
     }
   }
 }
